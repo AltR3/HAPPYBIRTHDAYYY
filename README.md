@@ -1,0 +1,673 @@
+Im not the best at coding, but i tried my hardest for you
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Happy Birthday Gabb!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            touch-action: manipulation;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #311042 100%);
+        }
+        .script-font {
+            font-family: 'Pacifico', cursive;
+        }
+        
+        #balloonCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+        #confettiCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .glow-text {
+            text-shadow: 0 0 10px rgba(244, 114, 182, 0.6),
+                         0 0 20px rgba(244, 114, 182, 0.4),
+                         0 0 30px rgba(236, 72, 153, 0.6),
+                         0 0 40px rgba(236, 72, 153, 0.8);
+            animation: pulse-glow 3s infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% {
+                text-shadow: 0 0 10px rgba(244, 114, 182, 0.6),
+                             0 0 20px rgba(244, 114, 182, 0.4),
+                             0 0 30px rgba(236, 72, 153, 0.6);
+            }
+            100% {
+                text-shadow: 0 0 15px rgba(244, 114, 182, 0.9),
+                             0 0 30px rgba(244, 114, 182, 0.7),
+                             0 0 50px rgba(236, 72, 153, 0.9),
+                             0 0 70px rgba(219, 39, 119, 1);
+            }
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .flame {
+            width: 18px;
+            height: 28px;
+            background: linear-gradient(to bottom, #fef08a, #f97316, #ef4444);
+            border-radius: 50% 50% 35% 35%;
+            position: absolute;
+            top: -26px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 15px #f97316, 0 0 30px #fef08a;
+            animation: flicker 0.15s infinite alternate;
+            transform-origin: center bottom;
+        }
+
+        @keyframes flicker {
+            0% { transform: translateX(-50%) scale(1) rotate(-2deg); }
+            100% { transform: translateX(-50%) scale(1.1) rotate(2deg); }
+        }
+
+        .smoke {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: rgba(200, 200, 200, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateX(-50%);
+        }
+
+        .smoke-active {
+            animation: riseSmoke 2s ease-out forwards;
+        }
+
+        @keyframes riseSmoke {
+            0% { opacity: 0.8; transform: translateX(-50%) translateY(0) scale(1); }
+            50% { opacity: 0.5; transform: translateX(-60%) translateY(-30px) scale(2.5); }
+            100% { opacity: 0; transform: translateX(-40%) translateY(-60px) scale(4); }
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative select-none flex items-center justify-center">
+
+    <canvas id="balloonCanvas"></canvas>
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- Controls Overlay -->
+    <div class="absolute top-4 right-4 z-30 flex items-center space-x-3">
+        <button id="settingsBtn" class="glass-card text-white w-12 h-12 rounded-full flex items-center justify-center text-lg hover:bg-white/20 transition active:scale-95 shadow-lg" title="Customize">
+            <i class="fas fa-pen"></i>
+        </button>
+        <!-- Audio Toggle Button - Defaults to ON -->
+        <button id="audioBtn" class="glass-card text-pink-400 w-12 h-12 rounded-full flex items-center justify-center text-lg hover:bg-white/20 transition active:scale-95 shadow-lg" title="Mute/Unmute Audio">
+            <i class="fas fa-volume-up" id="audioIcon"></i>
+        </button>
+        <button id="blastBtn" class="glass-card text-pink-300 w-12 h-12 rounded-full flex items-center justify-center text-lg hover:bg-white/20 transition active:scale-95 shadow-lg" title="Confetti Burst">
+            <i class="fas fa-gift"></i>
+        </button>
+    </div>
+
+    <!-- Central Greeting Card -->
+    <main class="relative z-20 text-center px-4 max-w-2xl w-full mx-auto pointer-events-none">
+        <div class="glass-card p-8 sm:p-12 rounded-3xl pointer-events-auto transform transition duration-500 hover:scale-[1.01]">
+            <div class="mb-3 text-pink-400 font-semibold uppercase tracking-widest text-xs sm:text-sm">
+                ✨ Best Wishes ✨
+            </div>
+            
+            <h1 class="script-font text-5xl sm:text-7xl md:text-8xl text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-rose-300 to-purple-400 glow-text mb-4 leading-tight">
+                Happy Birthday
+            </h1>
+            
+            <h2 id="nameDisplay" class="text-3xl sm:text-5xl font-bold text-white tracking-wide drop-shadow-md min-h-[3.5rem] flex items-center justify-center">
+                Gabb!
+            </h2>
+
+            <p class="mt-4 text-purple-200 text-sm sm:text-base opacity-90 max-w-md mx-auto">
+                Tap or click on the floating heart balloons to pop them! 🎉
+            </p>
+
+            <div class="mt-6 flex flex-wrap justify-center gap-3">
+                <button id="wishBtn" class="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition transform active:scale-95 flex items-center gap-2">
+                    <i class="fas fa-magic"></i> Make a Wish
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Customization Modal -->
+    <div id="settingsModal" class="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-slate-900/90 text-white p-6 sm:p-8 rounded-3xl max-w-md w-full relative border border-white/20 shadow-2xl">
+            <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl p-2">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 class="text-2xl font-bold mb-4 text-pink-400 flex items-center gap-2">
+                <i class="fas fa-edit"></i> Customize Card
+            </h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-300 mb-1">Birthday Person's Name</label>
+                    <input type="text" id="nameInput" placeholder="Enter name..." value="Gabb" 
+                           class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-pink-500 transition">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-300 mb-1">Heart Balloon Speed</label>
+                    <input type="range" id="speedInput" min="1" max="5" value="2" class="w-full accent-pink-500">
+                </div>
+                <button id="saveSettingsBtn" class="w-full bg-pink-500 hover:bg-pink-600 font-bold py-3 rounded-xl transition shadow-lg mt-2">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Make a Wish Modal -->
+    <div id="wishModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="glass-card bg-slate-900/90 text-white p-6 sm:p-8 rounded-3xl max-w-md w-full relative border border-pink-500/30 shadow-2xl text-center">
+            <button id="closeWishModalBtn" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl p-2">
+                <i class="fas fa-times"></i>
+            </button>
+            
+            <h3 class="text-2xl sm:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400 mb-2">
+                Make A Wish! ✨
+            </h3>
+            <p id="wishInstruction" class="text-pink-200 text-sm sm:text-base mb-6 font-medium">
+                Close your eyes and think of a special wish...
+            </p>
+
+            <div class="relative w-48 h-48 mx-auto my-4 flex flex-col items-center justify-end">
+                <!-- Candle -->
+                <div id="candle" class="relative w-4 h-16 bg-gradient-to-t from-yellow-100 via-pink-200 to-purple-200 rounded-t-sm z-10 shadow-md">
+                    <div id="candleFlame" class="flame"></div>
+                    <div id="candleSmoke" class="smoke"></div>
+                </div>
+
+                <!-- Cake Layers -->
+                <div class="w-32 h-10 bg-gradient-to-r from-pink-400 to-rose-400 rounded-t-2xl relative z-0 flex justify-around items-center px-2 shadow-inner border-t-2 border-pink-200/40">
+                    <div class="w-3 h-3 bg-white/80 rounded-full"></div>
+                    <div class="w-3 h-3 bg-white/80 rounded-full"></div>
+                    <div class="w-3 h-3 bg-white/80 rounded-full"></div>
+                    <div class="w-3 h-3 bg-white/80 rounded-full"></div>
+                </div>
+                <div class="w-44 h-14 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-600 rounded-b-xl relative z-0 border-t-4 border-yellow-200/80 shadow-lg flex items-center justify-center">
+                    <span class="text-xs text-yellow-100 tracking-widest font-bold">🎂 HAPPY BIRTHDAY 🎂</span>
+                </div>
+                <div class="w-52 h-3 bg-slate-300 rounded-full shadow-md mt-1"></div>
+            </div>
+
+            <!-- Countdown Timer -->
+            <div class="my-6">
+                <div id="wishTimerText" class="text-4xl sm:text-5xl font-black text-pink-400 drop-shadow-md tracking-wider leading-tight px-2">
+                    10
+                </div>
+                <div id="wishStatus" class="text-xs text-gray-300 mt-2">
+                    Blowing out the candle in <span id="wishTimerSub">10</span> seconds...
+                </div>
+            </div>
+
+            <button id="cancelWishBtn" class="bg-white/10 hover:bg-white/20 text-gray-200 text-sm font-semibold py-2 px-6 rounded-full transition border border-white/20">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const balloonCanvas = document.getElementById('balloonCanvas');
+        const ctx = balloonCanvas.getContext('2d');
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        
+        let width, height;
+        let balloons = [];
+        let particles = [];
+        let balloonSpeed = 2;
+        
+        // Sound & Music variables - Enabled by default
+        let isAudioPlaying = true; 
+        let audioInitialized = false;
+        let popSynth, melodySynth, blowSynth, musicLoop;
+
+        // Initialize Web Audio Engine & Happy Birthday Music Loop
+        function initAudio() {
+            if (audioInitialized) {
+                if (Tone.context.state !== 'running') {
+                    Tone.context.resume();
+                }
+                return;
+            }
+
+            try {
+                Tone.start();
+                Tone.context.resume();
+
+                popSynth = new Tone.MembraneSynth().toDestination();
+                melodySynth = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 0.8 }
+                }).toDestination();
+                melodySynth.volume.value = -6; // Pleasant background level
+
+                blowSynth = new Tone.NoiseSynth({
+                    noise: { type: 'white' },
+                    envelope: { attack: 0.1, decay: 0.8, sustain: 0 }
+                }).toDestination();
+
+                // Upbeat Continuous Happy Birthday Music Loop
+                const birthdayNotes = [
+                    { time: 0, note: "C4", duration: "8n" },
+                    { time: 0.3, note: "C4", duration: "8n" },
+                    { time: 0.6, note: "D4", duration: "4n" },
+                    { time: 1.2, note: "C4", duration: "4n" },
+                    { time: 1.8, note: "F4", duration: "4n" },
+                    { time: 2.4, note: "E4", duration: "2n" },
+
+                    { time: 3.6, note: "C4", duration: "8n" },
+                    { time: 3.9, note: "C4", duration: "8n" },
+                    { time: 4.2, note: "D4", duration: "4n" },
+                    { time: 4.8, note: "C4", duration: "4n" },
+                    { time: 5.4, note: "G4", duration: "4n" },
+                    { time: 6.0, note: "F4", duration: "2n" },
+
+                    { time: 7.2, note: "C4", duration: "8n" },
+                    { time: 7.5, note: "C4", duration: "8n" },
+                    { time: 7.8, note: "C5", duration: "4n" },
+                    { time: 8.4, note: "A4", duration: "4n" },
+                    { time: 9.0, note: "F4", duration: "4n" },
+                    { time: 9.6, note: "E4", duration: "4n" },
+                    { time: 10.2, note: "D4", duration: "2n" },
+
+                    { time: 11.4, note: "A#4", duration: "8n" },
+                    { time: 11.7, note: "A#4", duration: "8n" },
+                    { time: 12.0, note: "A4", duration: "4n" },
+                    { time: 12.6, note: "F4", duration: "4n" },
+                    { time: 13.2, note: "G4", duration: "4n" },
+                    { time: 13.8, note: "F4", duration: "2n" }
+                ];
+
+                musicLoop = new Tone.Part((time, value) => {
+                    if (isAudioPlaying) {
+                        melodySynth.triggerAttackRelease(value.note, value.duration, time);
+                    }
+                }, birthdayNotes);
+
+                musicLoop.loop = true;
+                musicLoop.loopEnd = "15.5s";
+                
+                Tone.Transport.start();
+                musicLoop.start(0);
+
+                audioInitialized = true;
+            } catch (e) {
+                console.log("Audio initialization deferred until gesture", e);
+            }
+        }
+
+        function triggerPopSound() {
+            if (!isAudioPlaying) return;
+            initAudio();
+            try {
+                if (popSynth) popSynth.triggerAttackRelease("C3", "8n");
+            } catch(e) {}
+        }
+
+        function triggerBlowSound() {
+            if (!isAudioPlaying) return;
+            initAudio();
+            try {
+                if (blowSynth) blowSynth.triggerAttackRelease("0.8");
+            } catch(e) {}
+        }
+
+        // Setup Responsive Canvas Dimensions
+        function resize() {
+            width = balloonCanvas.width = window.innerWidth;
+            height = balloonCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const colors = [
+            { main: 'rgba(244, 63, 94, 0.85)', highlight: '#fda4af' },   // Rose
+            { main: 'rgba(236, 72, 153, 0.85)', highlight: '#fbcfe8' },  // Pink
+            { main: 'rgba(168, 85, 247, 0.85)', highlight: '#e9d5ff' },  // Purple
+            { main: 'rgba(217, 70, 239, 0.85)', highlight: '#f5d0fe' },  // Fuchsia
+            { main: 'rgba(239, 68, 68, 0.85)', highlight: '#fca5a5' }    // Red
+        ];
+
+        class HeartBalloon {
+            constructor(x = null, y = null) {
+                this.reset(x, y);
+            }
+
+            reset(x = null, y = null) {
+                this.x = x !== null ? x : Math.random() * (width - 60) + 30;
+                this.y = y !== null ? y : height + Math.random() * 200 + 50;
+                this.size = Math.random() * 20 + 25;
+                this.speed = (Math.random() * 1.2 + 0.8) * balloonSpeed;
+                this.swing = Math.random() * 2 + 1;
+                this.swingSpeed = Math.random() * 0.02 + 0.01;
+                this.angle = Math.random() * Math.PI * 2;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.stringLength = this.size * 2.5;
+            }
+
+            update() {
+                this.y -= this.speed;
+                this.angle += this.swingSpeed;
+                this.x += Math.sin(this.angle) * 0.8;
+
+                if (this.y < -this.size * 2) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+
+                // String
+                ctx.beginPath();
+                ctx.moveTo(0, this.size * 0.8);
+                ctx.quadraticCurveTo(
+                    Math.sin(this.angle * 2) * 15,
+                    this.size + this.stringLength / 2,
+                    0,
+                    this.size + this.stringLength
+                );
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Heart Balloon
+                ctx.beginPath();
+                const topCurveHeight = this.size * 0.3;
+                ctx.moveTo(0, topCurveHeight);
+                ctx.bezierCurveTo(0, 0, -this.size, 0, -this.size, topCurveHeight);
+                ctx.bezierCurveTo(-this.size, (this.size + topCurveHeight) / 2, 0, this.size + topCurveHeight, 0, this.size * 1.2);
+                ctx.bezierCurveTo(0, this.size + topCurveHeight, this.size, (this.size + topCurveHeight) / 2, this.size, topCurveHeight);
+                ctx.bezierCurveTo(this.size, 0, 0, 0, 0, topCurveHeight);
+                ctx.closePath();
+
+                const gradient = ctx.createRadialGradient(-this.size*0.3, -this.size*0.1, 2, 0, 0, this.size * 1.5);
+                gradient.addColorStop(0, this.color.highlight);
+                gradient.addColorStop(0.4, this.color.main);
+                gradient.addColorStop(1, 'rgba(100, 10, 40, 0.8)');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Shine
+                ctx.beginPath();
+                ctx.arc(-this.size * 0.35, topCurveHeight * 0.8, this.size * 0.18, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            containsPoint(px, py) {
+                const dx = px - this.x;
+                const dy = py - this.y;
+                return Math.sqrt(dx * dx + dy * dy) < this.size * 1.2;
+            }
+        }
+
+        class PopParticle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.radius = Math.random() * 4 + 2;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.03 + 0.02;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1;
+                this.alpha -= this.decay;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Spawn Initial Balloons
+        const balloonCount = Math.min(25, Math.floor(window.innerWidth / 30));
+        for (let i = 0; i < balloonCount; i++) {
+            balloons.push(new HeartBalloon());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = balloons.length - 1; i >= 0; i--) {
+                const b = balloons[i];
+                b.update();
+                b.draw();
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function fireConfetti() {
+            var count = 200;
+            var defaults = { origin: { y: 0.7 } };
+
+            function fire(particleRatio, opts) {
+                confetti(Object.assign({}, defaults, opts, {
+                    particleCount: Math.floor(count * particleRatio)
+                }));
+            }
+
+            fire(0.25, { spread: 26, startVelocity: 55, colors: ['#f43f5e', '#ec4899'] });
+            fire(0.2, { spread: 60, colors: ['#a855f7', '#3b82f6'] });
+            fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+            fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, colors: ['#fbbf24', '#f43f5e'] });
+            fire(0.1, { spread: 120, startVelocity: 45 });
+        }
+
+        function handleInteraction(clientX, clientY) {
+            initAudio();
+            let poppedAny = false;
+
+            for (let i = balloons.length - 1; i >= 0; i--) {
+                const b = balloons[i];
+                if (b.containsPoint(clientX, clientY)) {
+                    for (let p = 0; p < 18; p++) {
+                        particles.push(new PopParticle(b.x, b.y, b.color.highlight));
+                    }
+                    triggerPopSound();
+                    b.reset();
+                    poppedAny = true;
+                    break;
+                }
+            }
+
+            if (!poppedAny) {
+                for (let p = 0; p < 6; p++) {
+                    particles.push(new PopParticle(clientX, clientY, '#f43f5e'));
+                }
+            }
+        }
+
+        balloonCanvas.addEventListener('click', (e) => handleInteraction(e.clientX, e.clientY));
+        balloonCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (e.touches.length > 0) {
+                handleInteraction(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: false });
+
+        // Unmute/start audio immediately on first interaction anywhere on screen
+        const autoAudioStart = () => {
+            initAudio();
+            window.removeEventListener('click', autoAudioStart);
+            window.removeEventListener('touchstart', autoAudioStart);
+        };
+        window.addEventListener('click', autoAudioStart);
+        window.addEventListener('touchstart', autoAudioStart);
+
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const nameInput = document.getElementById('nameInput');
+        const nameDisplay = document.getElementById('nameDisplay');
+        const speedInput = document.getElementById('speedInput');
+
+        settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+        closeModalBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+        saveSettingsBtn.addEventListener('click', () => {
+            const newName = nameInput.value.trim();
+            if (newName) {
+                nameDisplay.textContent = newName + "!";
+            }
+            balloonSpeed = parseFloat(speedInput.value);
+            balloons.forEach(b => b.speed = (Math.random() * 1.2 + 0.8) * balloonSpeed);
+            settingsModal.classList.add('hidden');
+            fireConfetti();
+        });
+
+        // Audio Toggle Button logic
+        const audioBtn = document.getElementById('audioBtn');
+        const audioIcon = document.getElementById('audioIcon');
+
+        audioBtn.addEventListener('click', () => {
+            initAudio();
+            isAudioPlaying = !isAudioPlaying;
+            if (isAudioPlaying) {
+                audioIcon.className = 'fas fa-volume-up';
+                audioBtn.className = 'glass-card text-pink-400 w-12 h-12 rounded-full flex items-center justify-center text-lg hover:bg-white/20 transition active:scale-95 shadow-lg';
+            } else {
+                audioIcon.className = 'fas fa-volume-mute';
+                audioBtn.className = 'glass-card text-gray-400 w-12 h-12 rounded-full flex items-center justify-center text-lg hover:bg-white/20 transition active:scale-95 shadow-lg';
+            }
+        });
+
+        document.getElementById('blastBtn').addEventListener('click', () => {
+            initAudio();
+            fireConfetti();
+        });
+
+        const wishBtn = document.getElementById('wishBtn');
+        const wishModal = document.getElementById('wishModal');
+        const closeWishModalBtn = document.getElementById('closeWishModalBtn');
+        const cancelWishBtn = document.getElementById('cancelWishBtn');
+        const wishTimerText = document.getElementById('wishTimerText');
+        const wishTimerSub = document.getElementById('wishTimerSub');
+        const wishInstruction = document.getElementById('wishInstruction');
+        const wishStatus = document.getElementById('wishStatus');
+        const candleFlame = document.getElementById('candleFlame');
+        const candleSmoke = document.getElementById('candleSmoke');
+
+        let wishCountdownInterval = null;
+
+        function startWishCountdown() {
+            initAudio();
+            wishModal.classList.remove('hidden');
+            
+            candleFlame.style.display = 'block';
+            candleSmoke.classList.remove('smoke-active');
+            wishInstruction.textContent = "Close your eyes and think of a special wish...";
+            wishStatus.style.display = 'block';
+            
+            let count = 10;
+            wishTimerText.textContent = count;
+            wishTimerSub.textContent = count;
+
+            if (wishCountdownInterval) clearInterval(wishCountdownInterval);
+
+            wishCountdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    wishTimerText.textContent = count;
+                    wishTimerSub.textContent = count;
+                    if (count === 3) {
+                        wishInstruction.textContent = "Take a deep breath...";
+                    }
+                } else {
+                    clearInterval(wishCountdownInterval);
+                    wishTimerText.innerHTML = `<span class="block text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 via-rose-300 to-purple-300 glow-text leading-snug">Happy birthday Gabb,<br>brother loves you now and forever!</span>`;
+                    wishStatus.style.display = 'none';
+                    wishInstruction.textContent = "May all your dreams come true! 🥳";
+
+                    // Extinguish candle
+                    candleFlame.style.display = 'none';
+                    candleSmoke.classList.add('smoke-active');
+
+                    // Sound effect & Confetti
+                    triggerBlowSound();
+                    fireConfetti();
+
+                    // Auto-close modal after reading
+                    setTimeout(() => {
+                        wishModal.classList.add('hidden');
+                    }, 7000);
+                }
+            }, 1000);
+        }
+
+        function stopWishCountdown() {
+            if (wishCountdownInterval) clearInterval(wishCountdownInterval);
+            wishModal.classList.add('hidden');
+        }
+
+        wishBtn.addEventListener('click', startWishCountdown);
+        closeWishModalBtn.addEventListener('click', stopWishCountdown);
+        cancelWishBtn.addEventListener('click', stopWishCountdown);
+
+        // Page Launch Initialization
+        window.onload = () => {
+            animate();
+            setTimeout(() => {
+                fireConfetti();
+            }, 400);
+            
+            // Attempt auto-playing sound on load
+            initAudio();
+        };
+    </script>
+</body>
+</html>
